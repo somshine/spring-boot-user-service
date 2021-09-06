@@ -1,5 +1,6 @@
 package com.somshine.userServer.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,5 +51,56 @@ public class UserController {
 	public User doLogin(@PathVariable String username, @RequestBody User user) {
 		LOG.log(Level.INFO, "product/get/\n" + user.getUsername() + " is calling" + user.toString());
 		return userRepository.findByUsername(username);
+	}
+	
+	@RequestMapping(value = "/user/v1/getUsersByMobileNos", method = RequestMethod.GET)
+	public List<User> getUsersByMobileNos(@RequestParam(value = "mobileNo", required = false) List<String> mobileNos) {
+		LOG.log(Level.INFO, "user/v1/getUserByMobileNos\n");
+		List<User> users = new ArrayList();
+		for (String mobileNo : mobileNos) {
+			User user = new User();
+			user.setMobileNo(mobileNo);
+			user.setId(Math.round(Math.random()*100));
+			users.add(user);
+		}
+		return users;
+	}
+	
+	@RequestMapping(value = "/user/v1/getUserByFilters", method = RequestMethod.GET)
+	public List<User> getUserByFilters(
+			@RequestParam(value = "accessTypeId", required = true) Integer accessTypeId,
+			@RequestParam(value = "mobileNo", required = false) String mobileNo,
+			@RequestParam(value = "username", required = false) String username
+	) {
+		LOG.log(Level.INFO, "user/v1/getUserByMobileNos\n");
+		if (mobileNo != null && username != null && !mobileNo.isEmpty() && !username.isEmpty()) {
+			return userRepository.getUserByAccessTypeIdAndMobileNoOrUsername(accessTypeId, mobileNo, username);
+		}  else if (mobileNo != null && !mobileNo.isEmpty()) {
+			return userRepository.getUserByAccessTypeIdAndMobileNo(accessTypeId, mobileNo);
+		} else if (username != null && !username.isEmpty()) {
+			return userRepository.getUserByAccessTypeIdAndUsername(accessTypeId, username);
+		}
+		
+		return null;
+	}
+	
+	@RequestMapping(value = "/user/v1/getUserByFirstNameSort/{firstName}", method = RequestMethod.GET, produces = {"application/json", "application/xml"})
+	public List<User> getUserByFirstNameSort(@PathVariable String firstName, @RequestParam(value = "sorting", required = false) String sort) {
+		LOG.log(Level.INFO, "user/v1/getUserByFirstNameSort/{firstName}\n");
+		if (firstName != null && !firstName.isEmpty()) {
+			if ((sort == null || sort.equalsIgnoreCase("asc"))) {
+				return userRepository.findUserDistinctByFirstNameOrderByMobileNoAsc(firstName);
+			} else {
+				return userRepository.findDistinctUserByFirstNameOrderByMobileNoDesc(firstName);
+			}
+		}
+		
+		return null;
+	}
+	
+	@RequestMapping(value = "/user/v1/add", method = RequestMethod.POST)
+	public User addNewUser(@RequestBody User user) {
+		System.err.println(user.toString());
+		return user;
 	}
 }
